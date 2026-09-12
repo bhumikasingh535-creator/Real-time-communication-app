@@ -11,7 +11,9 @@ const connectDB = async () => {
     console.log("Contains port :27017:", uri?.includes(":27017"));
     console.log("URI length:", uri?.length);
 
-    await mongoose.connect(uri);
+    await mongoose.connect(uri, {
+  serverSelectionTimeoutMS: 10000,
+});
 
     console.log("✅ MongoDB Connected Successfully");
   } catch (error) {

@@ -1240,7 +1240,7 @@ const handleLogout = () => {
   navigate("/login");
 };
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex flex-col md:flex-row h-screen bg-gray-100">
 
       {incomingCall && !callAccepted && (
   <div className="fixed top-6 right-6 bg-white shadow-xl rounded-xl p-5 z-50">
@@ -1260,7 +1260,7 @@ const handleLogout = () => {
 )
 };
       {/* Sidebar */}
-      <div className="w-1/4 bg-[#1c2230] border-r border-[#2c3445] flex flex-col">
+      <div className={`w-full md:w-1/4 h-full bg-[#1c2230] border-r border-[#2c3445] flex flex-col ${selectedUser ? "hidden md:flex" : "flex"}`}>
        <div className="p-5 border-b border-[#2c3445] flex items-center justify-between">
   <div className="flex items-center gap-3">
     <div>
@@ -1311,7 +1311,7 @@ const handleLogout = () => {
 />
         </div>
 
-        <div className="overflow-y-auto">
+        <div className="flex-1 overflow-y-auto min-h-0">
           {filteredUsers.length === 0 ? (
             <p className="text-center text-gray-500 mt-5">
               No users found
@@ -1377,7 +1377,7 @@ const handleLogout = () => {
           )}
         </div>
 
-        <div className="flex items-center gap-2 px-4 py-3 border-t border-white/5">
+        <div className="flex items-center gap-2 px-3 md:px-4 py-3 border-t border-white/5 shrink-0">
 
   <button
     onClick={() => setChatbotOpen(true)}
@@ -1399,7 +1399,7 @@ const handleLogout = () => {
 
       {/* ================= CHATBOT ================= */}
 {chatbotOpen && (
-  <div className="fixed bottom-20 left-5 z-[100] w-80 h-[450px] bg-[#1c2230] border border-[#2c3445] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+  <div className="fixed bottom-20 left-3 right-3 md:left-5 md:right-auto z-[100] w-auto md:w-80 h-[450px] bg-[#1c2230] border border-[#2c3445] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
 
     {/* Header */}
     <div className="bg-[#252c3b] text-white px-4 py-3 flex justify-between items-center border-b border-[#343c4e]">
@@ -1491,10 +1491,10 @@ const handleLogout = () => {
 )}
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className={`flex-1 min-w-0 flex flex-col ${selectedUser ? "flex" : "hidden md:flex"}`}>
         {selectedUser ? (
           <>
-            <div className="h-[76px] border-b border-[#292f3e] px-6 flex items-center justify-between bg-[#11141c]">
+            <div className="min-h-[76px] px-3 md:px-6 py-3 border-b border-[#292f3e] flex items-center justify-between bg-[#11141c] gap-2">
 
   {/* Left */}
  <div className="flex items-center gap-3">
@@ -1520,11 +1520,17 @@ const handleLogout = () => {
       }`}
     />
   </div>
+  <button
+  onClick={() => setSelectedUser(null)}
+  className="md:hidden text-gray-300 text-xl mr-2"
+>
+  ←
+</button>
 
   {/* User Details */}
-  <div>
+  <div className="min-w-0">
 
-    <h2 className="text-lg font-semibold text-white">
+    <h2 className="text-lg font-semibold text-white truncate">
       {selectedUser.name}
     </h2>
 
@@ -1556,7 +1562,7 @@ const handleLogout = () => {
     {/* Audio Call */}
     <button
       onClick={startAudioCall}
-      className="w-11 h-11 rounded-xl bg-[#1c2230] border border-[#2a3141] text-gray-400 hover:text-white hover:bg-[#252c3b] transition flex items-center justify-center"
+      className="w-9 h-9 md:w-11 md:h-11 rounded-xl bg-[#1c2230] border border-[#2a3141] text-gray-400 hover:text-white hover:bg-[#252c3b] transition flex items-center justify-center"
       title="Audio Call"
     >
       <FaPhone />
@@ -1565,7 +1571,7 @@ const handleLogout = () => {
     {/* Video Call */}
     <button
       onClick={() => startVideoCall(selectedUser)}
-      className="w-11 h-11 rounded-xl bg-[#1c2230] border border-[#2a3141] text-gray-400 hover:text-white hover:bg-[#252c3b] transition flex items-center justify-center"
+      className="w-9 h-9 md:w-11 md:h-11 rounded-xl bg-[#1c2230] border border-[#2a3141] text-gray-400 hover:text-white hover:bg-[#252c3b] transition flex items-center justify-center"
       title="Video Call"
     >
       <FaVideo />
@@ -1585,7 +1591,7 @@ const handleLogout = () => {
 </div>
 
 {incomingCall && (
-  <div className="fixed top-5 right-5 bg-white shadow-lg p-5 rounded-lg z-50">
+  <div className="fixed top-4 left-4 right-4 md:top-5 md:right-5 md:left-auto md:w-80 bg-white shadow-lg p-5 rounded-lg z-50">
     <h3 className="font-semibold text-lg">
       Incoming Call
     </h3>
@@ -1613,7 +1619,7 @@ const handleLogout = () => {
 )}
 
 {(isCalling || callAccepted) && (
-  <div className="flex gap-4 p-4">
+  <div className="flex flex-col sm:flex-row flex-wrap items-center gap-4 p-3 md:p-4">
 
     {/* =========================
         VIDEO CALL
@@ -1645,7 +1651,7 @@ const handleLogout = () => {
         AUDIO CALL
     ========================= */}
     {callType === "audio" && (
-      <div className="flex flex-col items-center justify-center p-6 bg-gray-100 rounded-xl">
+      <div className="w-full sm:w-auto flex flex-col items-center justify-center p-6 bg-gray-100 rounded-xl">
 
         <div className="text-5xl mb-5 px-6">
           📞
@@ -1670,7 +1676,7 @@ const handleLogout = () => {
     />
      <button
   onClick={endCall}
-  className="bg-red-500 text-white px-5 py-2 rounded-lg hover:bg-red-600"
+  className="w-full sm:w-auto bg-red-500 text-white px-5 py-2 rounded-lg hover:bg-red-600"
 >
   📞 End Call
 </button>
@@ -1680,11 +1686,7 @@ const handleLogout = () => {
   
 )}
 
-
-
-
-
-<div className="flex-1 overflow-y-auto p-6 bg-[#10131b]">
+<div className="flex-1 min-w-0 overflow-y-auto p-3 md:p-6 bg-[#10131b]">
   {messages.map((message, index) => (
     <div
       key={message._id || index}
@@ -1699,14 +1701,14 @@ const handleLogout = () => {
     setMessageMenuId(message._id);
   }
 }}
-      className={`mb-5 flex px-6 ${
+      className={`mb-5 flex px-1 md:px-2 ${
         String(message.senderId) === String(currentUser.id)
           ? "justify-end"
           : "justify-start"
       }`}
     >
       <div
-        className={`relative px-5 py-3 rounded-2xl max-w-md shadow-sm ${
+        className={`relative px-4 md:px-5 py-3 rounded-2xl max-w-[85%] md:max-w-md shadow-sm ${
           String(message.senderId) === String(currentUser.id)
             ? "bg-[#3f61b5] text-white rounded-br-md"
             : "bg-[#242a39] text-white rounded-bl-md"
@@ -1785,7 +1787,7 @@ const handleLogout = () => {
 
 {message.audio?.url && (
   <div className="mt-2">
-    <audio controls className="w-64">
+    <audio controls className="w-full max-w-[280px]">
       <source
         src={message.audio.url}
         type="audio/webm"
@@ -1803,7 +1805,7 @@ const handleLogout = () => {
 {message.text && (
   <>
     {editingMessageId === message._id ? (
-      <div className="flex gap-2 items-center">
+      <div className="flex flex-wrap gap-2 items-center">
         <input
           type="text"
           value={editingText}
@@ -1861,7 +1863,7 @@ const handleLogout = () => {
 
  {messageMenuId === message._id &&(
  
-    <div className="absolute right-0 bottom-full mb-2 z-50 bg-[#1c2230] border border-[#30384a] rounded-xl shadow-xl overflow-hidden min-w-[120px]">
+    <div className="absolute right-0 bottom-full mb-2 z-50 bg-[#1c2230] border border-[#30384a] rounded-xl shadow-xl overflow-hidden min-w-[120px] max-w-[85vw]">
       
       <button
   onClick={() => {
@@ -1899,7 +1901,7 @@ const handleLogout = () => {
   {/* Reactions */}
 
 {message.text !== "This message was deleted" && (
-  <div className="flex gap-1 mt-2">
+  <div className="flex flex-wrap gap-1 mt-2">
     {["❤️", "😂", "👍", "😢", "😡"].map((reaction) => (
       <button
         key={reaction}
@@ -1928,9 +1930,9 @@ const handleLogout = () => {
   <div ref={chatEndRef}></div>
 </div>
 
-<div className="relative p-4 bg-white border-t flex gap-3">
+<div className="relative p-3 md:p-4 bg-white border-t flex gap-2 md:gap-3 flex-wrap">
   {showEmojiPicker && (
-  <div className="absolute bottom-20 left-5 z-50">
+  <div className="absolute bottom-20 left-3 md:left-5 z-50 max-w-[calc(100vw-24px)] overflow-hidden">
     <EmojiPicker
       onEmojiClick={onEmojiClick}
       width={320}
@@ -1957,7 +1959,7 @@ const handleLogout = () => {
 
 <button
   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-  className="bg-yellow-500 text-white px-4 rounded-lg hover:bg-yellow-600"
+  className="bg-yellow-500 text-white px-3 md:px-4 py-3 rounded-lg hover:bg-yellow-600"
 >
   😊
 </button>
@@ -1975,26 +1977,23 @@ const handleLogout = () => {
       </p>
 
       <p className="text-sm text-gray-300 truncate">
-        {replyingTo.text || "This message"}
-      </p>
+  {replyingTo.text
+    ? replyingTo.text
+    : replyingTo.image
+    ? "🖼️ Image"
+    : replyingTo.file?.name
+    ? `📎 ${replyingTo.file.name}`
+    : replyingTo.audio?.url
+    ? "🎵 Audio message"
+    : "Attachment"}
+</p>
     </div>
 
-    <button
-  onClick={() => {
-    setReplyingTo({
-      ...message,
-      text:
-        message.text ||
-        (message.image ? "📷 Image" : "") ||
-        (message.file?.name ? `📎 ${message.file.name}` : "") ||
-        "Attachment",
-    });
-
-    setMessageMenuId(null);
-  }}
-  className="w-full px-4 py-2.5 text-left text-sm text-gray-200 hover:bg-[#293144] transition"
+   <button
+  onClick={() => setReplyingTo(null)}
+  className="text-gray-400 hover:text-white px-2 text-lg"
 >
-  ↩️ Reply
+  ✕
 </button>
   </div>
 )}
@@ -2024,7 +2023,7 @@ const handleLogout = () => {
         sendMessage();
       }
     }}
-    className="flex-1 border rounded-lg p-3 outline-none"
+    className="flex-1 min-w-[150px] border rounded-lg p-3 outline-none"
   />
   <div className="relative">
 
@@ -2084,7 +2083,7 @@ const handleLogout = () => {
 
   <button
     onClick={sendMessage}
-    className="bg-blue-600 text-white px-6 rounded-lg hover:bg-blue-700"
+    className="bg-blue-600 text-white px-4 md:px-6 py-3 rounded-lg hover:bg-blue-700"
   >
     Send
   </button>

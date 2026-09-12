@@ -1240,7 +1240,7 @@ const handleLogout = () => {
   navigate("/login");
 };
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-gray-100">
+    <div className="flex flex-col md:flex-row h-[100dvh] overflow-hidden bg-gray-100">
 
       {incomingCall && !callAccepted && (
   <div className="fixed top-6 right-6 bg-white shadow-xl rounded-xl p-5 z-50">
@@ -1491,10 +1491,14 @@ const handleLogout = () => {
 )}
 
       {/* Chat Area */}
-      <div className={`flex-1 min-w-0 flex flex-col ${selectedUser ? "flex" : "hidden md:flex"}`}>
+      <div
+  className={`flex-1 min-w-0 min-h-0 h-[100dvh] max-h-[100dvh] overflow-hidden flex flex-col ${
+    selectedUser ? "flex" : "hidden md:flex"
+  }`}
+>
         {selectedUser ? (
           <>
-            <div className="min-h-[76px] px-3 md:px-6 py-3 border-b border-[#292f3e] flex items-center justify-between bg-[#11141c] gap-2">
+            <div className="min-h-[76px] shrink-0 px-3 md:px-6 py-3 border-b border-[#292f3e] flex items-center justify-between bg-[#11141c] gap-2">
 
   {/* Left */}
  <div className="flex items-center gap-3">
@@ -1686,7 +1690,7 @@ const handleLogout = () => {
   
 )}
 
-<div className="flex-1 min-w-0 overflow-y-auto p-3 md:p-6 bg-[#10131b]">
+<div className="flex-1 min-w-0 min-h-0 overflow-y-auto p-3 md:p-6 bg-[#10131b]">
   {messages.map((message, index) => (
     <div
       key={message._id || index}
@@ -1930,7 +1934,7 @@ const handleLogout = () => {
   <div ref={chatEndRef}></div>
 </div>
 
-<div className="relative p-3 md:p-4 bg-white border-t flex gap-2 md:gap-3 flex-wrap">
+<div className="relative shrink-0 p-3 md:p-4 bg-white border-t flex gap-2 md:gap-3 flex-wrap">
   {showEmojiPicker && (
   <div className="absolute bottom-20 left-3 md:left-5 z-50 max-w-[calc(100vw-24px)] overflow-hidden">
     <EmojiPicker

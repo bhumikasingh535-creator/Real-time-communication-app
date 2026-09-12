@@ -5,11 +5,11 @@ const path = require("path");
 const fs = require("fs");
 
 // ===============================
-// Send Text Message
+// Send Message
 // ===============================
 exports.sendMessage = async (req, res) => {
   try {
-    const { receiverId, text } = req.body;
+    const { receiverId, text, replyTo } = req.body;
 
     if (!receiverId) {
       return res.status(400).json({
@@ -17,12 +17,48 @@ exports.sendMessage = async (req, res) => {
       });
     }
 
+    let replyData = null;
+
+    // ===============================
+    // Prepare Reply Data
+    // ===============================
+    if (replyTo?.messageId) {
+      const originalMessage = await Message.findById(replyTo.messageId);
+
+      if (originalMessage) {
+        replyData = {
+          messageId: originalMessage._id,
+          text: originalMessage.text || "",
+          image: originalMessage.image || "",
+
+          file: {
+            url: originalMessage.file?.url || "",
+            publicId: originalMessage.file?.publicId || "",
+            name: originalMessage.file?.name || "",
+            type: originalMessage.file?.type || "",
+            size: originalMessage.file?.size || 0,
+          },
+
+          audio: {
+            url: originalMessage.audio?.url || "",
+            duration: originalMessage.audio?.duration || 0,
+          },
+
+          senderId: originalMessage.senderId,
+        };
+      }
+    }
+
+    // ===============================
+    // Create New Message
+    // ===============================
     const message = await Message.create({
       senderId: req.user.id,
       receiverId: receiverId,
       text: text || "",
       image: "",
       status: "sent",
+      replyTo: replyData,
     });
 
     res.status(201).json(message);
@@ -35,9 +71,8 @@ exports.sendMessage = async (req, res) => {
     });
   }
 };
-
 // ===============================
-// Send Message
+// Send Image
 // ===============================
 exports.sendImage = async (req, res) => {
   try {
@@ -49,17 +84,23 @@ exports.sendImage = async (req, res) => {
       });
     }
 
-    // Upload saved file to Cloudinary
-    const result = await cloudinary.uploader.upload(req.file.path, {
-      folder: "chat-images",
-      resource_type: "image",
-    });
+    // Upload image buffer directly to Cloudinary
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: "chat-images",
+          resource_type: "image",
+        },
+        (error, result) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(result);
+          }
+        }
+      );
 
-    // Delete temporary local file
-    fs.unlink(req.file.path, (err) => {
-      if (err) {
-        console.log("Temporary file delete error:", err);
-      }
+      stream.end(req.file.buffer);
     });
 
     // Save message
@@ -81,7 +122,6 @@ exports.sendImage = async (req, res) => {
     });
   }
 };
-
 // ===============================
 // Get Conversation
 // ===============================

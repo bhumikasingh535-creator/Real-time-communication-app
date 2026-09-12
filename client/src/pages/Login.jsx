@@ -40,7 +40,7 @@ function Login() {
 
       navigate("/home");
     } catch (error) {
-      console.log("❌ LOGIN ERROR", error);
+      console.log("❌ LOGIN ERROR", error.response?.data);
 
       toast.error(
         error.response?.data?.message || "Login Failed"

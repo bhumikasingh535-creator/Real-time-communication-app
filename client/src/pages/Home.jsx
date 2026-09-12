@@ -52,6 +52,8 @@ const Home = () => {
   const [chatbotMessages, setChatbotMessages] = useState([]);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [messageMenuId, setMessageMenuId] = useState(null);
+  const [replyingTo, setReplyingTo] = useState(null);
+
 
   const configuration = {
     iceServers: [
@@ -323,18 +325,27 @@ const fetchMessages = async (receiverId) => {
 
 const sendMessage = async () => {
   console.log("🚀 Send button clicked");
-console.log("Selected User:", selectedUser);
-console.log("Message:", text);
+  console.log("Selected User:", selectedUser);
+  console.log("Message:", text);
+
   if (!text.trim() || !selectedUser) return;
 
   try {
     const token = localStorage.getItem("token");
 
+    console.log("🔥 REPLYING TO BEFORE SEND:", replyingTo);
     const res = await API.post(
       "/message/send",
       {
         receiverId: selectedUser._id,
         text,
+        replyTo: replyingTo
+          ? {
+              messageId: replyingTo._id,
+              text: replyingTo.text || "",
+              senderId: replyingTo.senderId,
+            }
+          : null,
       },
       {
         headers: {
@@ -342,35 +353,38 @@ console.log("Message:", text);
         },
       }
     );
+    console.log("🔥 REPLYTO IN RESPONSE:", res.data.replyTo);
 
+    console.log("SENT MESSAGE:", res.data);
     socket.emit("sendMessage", res.data);
-setMessages((prev) => [
-  ...prev,
-  {
-    ...res.data,
-    status: "sent",
-  },
-]);
-    
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        ...res.data,
+        status: "sent",
+      },
+    ]);
 
     setText("");
+    setReplyingTo(null);
 
     socket.emit("stopTyping", {
       receiverId: selectedUser._id,
     });
+
   } catch (error) {
-  console.log("❌ SEND MESSAGE ERROR");
-  console.log(error);
+    console.log("❌ SEND MESSAGE ERROR");
+    console.log(error);
 
-  if (error.response) {
-    console.log("Status:", error.response.status);
-    console.log("Data:", error.response.data);
-  } else {
-    console.log("No response from server");
+    if (error.response) {
+      console.log("Status:", error.response.status);
+      console.log("Data:", error.response.data);
+    } else {
+      console.log("No response from server");
+    }
   }
-}
 };
-
 const createPeerConnection = (remoteUserId) => {
   const pc = new RTCPeerConnection({
     iceServers: [
@@ -646,7 +660,7 @@ const startAudioCall = async () => {
     setIsCalling(true);
     
 
-    const pc = createPeerConnection();
+   const pc = createPeerConnection(selectedUser._id);
 
     // Add only audio track
     stream.getTracks().forEach((track) => {
@@ -677,47 +691,58 @@ const startAudioCall = async () => {
 
 const answerCall = async () => {
   try {
+    if (!incomingCall) {
+      console.log("❌ No incoming call");
+      return;
+    }
+
+    const isAudioCall = incomingCall.callType === "audio";
+
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: true,
       audio: true,
+      video: !isAudioCall,
     });
+
+    console.log("✅ Call media access granted");
 
     localStreamRef.current = stream;
 
-    if (localVideoRef.current) {
+    // Video only for video calls
+    if (!isAudioCall && localVideoRef.current) {
       localVideoRef.current.srcObject = stream;
     }
 
+    setCallType(isAudioCall ? "audio" : "video");
+    setCallPartnerId(incomingCall.from);
     setIsCalling(true);
 
-    const peer = new Peer({
-      initiator: false,
-      trickle: false,
-      stream,
+    // IMPORTANT: use the same RTCPeerConnection
+    const pc = createPeerConnection(incomingCall.from);
+
+    // Add audio/video tracks
+    stream.getTracks().forEach((track) => {
+      pc.addTrack(track, stream);
     });
 
-    peer.on("signal", (answer) => {
-      socket.emit("answerCall", {
-        to: incomingCall.from,
-        answer,
-      });
+    // Get answer
+    const answer = await pc.createAnswer();
+
+    await pc.setLocalDescription(answer);
+
+    console.log("📞 SENDING ANSWER");
+
+    socket.emit("answerCall", {
+      to: incomingCall.from,
+      answer,
     });
-
-    peer.on("stream", (remoteStream) => {
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = remoteStream;
-      }
-    });
-
-    peer.signal(incomingCall.offer);
-
-    peerRef.current = peer;
 
     setCallAccepted(true);
     setIncomingCall(null);
 
-  } catch (err) {
-    console.log(err);
+    console.log("✅ Call answered");
+
+  } catch (error) {
+    console.log("❌ Answer Call Error:", error);
   }
 };
 const endCall = () => {
@@ -1074,6 +1099,8 @@ const handleEditMessage = async (messageId) => {
       text: editingText,
     });
 
+    console.log("EDIT RESPONSE:", res.data);
+
     setMessages((prevMessages) =>
       prevMessages.map((message) =>
         message._id === messageId
@@ -1142,6 +1169,47 @@ const handleChatbotMessage = async () => {
         text: "Sorry, I couldn't process your request.",
       },
     ]);
+  }
+};
+
+const handleDelete = async (messageId) => {
+  try {
+    await API.delete(`/message/delete/${messageId}`);
+
+    setMessages((prevMessages) =>
+      prevMessages.map((msg) =>
+        msg._id === messageId
+          ? { ...msg, text: "This message was deleted", image: "", file: null }
+          : msg
+      )
+    );
+
+    setMessageMenuId(null);
+  } catch (error) {
+    console.error("Delete message error:", error);
+  }
+};
+
+const handleEdit = async (messageId) => {
+  try {
+    if (!editingText.trim()) return;
+
+    const response = await API.put(`/message/edit/${messageId}`, {
+      text: editingText,
+    });
+
+    setMessages((prevMessages) =>
+      prevMessages.map((msg) =>
+        msg._id === messageId
+          ? { ...msg, text: editingText }
+          : msg
+      )
+    );
+
+    setEditingMessageId(null);
+    setEditingText("");
+  } catch (error) {
+    console.error("Edit message error:", error);
   }
 };
 
@@ -1487,9 +1555,7 @@ const handleLogout = () => {
 
     {/* Audio Call */}
     <button
-      onClick={() => {
-        // existing audio call function yahan
-      }}
+      onClick={startAudioCall}
       className="w-11 h-11 rounded-xl bg-[#1c2230] border border-[#2a3141] text-gray-400 hover:text-white hover:bg-[#252c3b] transition flex items-center justify-center"
       title="Audio Call"
     >
@@ -1646,6 +1712,27 @@ const handleLogout = () => {
             : "bg-[#242a39] text-white rounded-bl-md"
         }`}
       >
+        {message.replyTo?.messageId && (
+  <div className="mb-2 rounded-lg bg-[#151a24] border-l-2 border-blue-400 px-3 py-2">
+    <p className="text-xs text-blue-400 mb-1">
+      Replying to
+    </p>
+
+    <p className="text-xs text-gray-400 truncate">
+      {message.replyTo.text
+        ? message.replyTo.text
+        : message.replyTo.image
+        ? "🖼️ Image"
+        : message.replyTo.file?.name
+        ? `📎 ${message.replyTo.file.name}`
+        : message.replyTo.file?.url
+        ? "📎 Document"
+        : message.replyTo.audio?.url
+        ? "🎵 Audio"
+        : "This message was deleted"}
+    </p>
+  </div>
+)}
  {message.image && (
   <img
     src={message.image}
@@ -1712,6 +1799,7 @@ const handleLogout = () => {
   </div>
 )}
 
+
 {message.text && (
   <>
     {editingMessageId === message._id ? (
@@ -1776,24 +1864,35 @@ const handleLogout = () => {
     <div className="absolute right-0 bottom-full mb-2 z-50 bg-[#1c2230] border border-[#30384a] rounded-xl shadow-xl overflow-hidden min-w-[120px]">
       
       <button
-        onClick={() => {
-          handleEdit(message);
-          setMessageMenuId(null);
-        }}
-        className="w-full px-4 py-2.5 text-left text-sm text-gray-200 hover:bg-[#293144] transition"
-      >
-        ✏️ Edit
-      </button>
+  onClick={() => {
+    setReplyingTo(message);
+    setMessageMenuId(null);
+  }}
+  className="w-full px-4 py-2.5 text-left text-sm text-gray-200 hover:bg-[#293144] transition"
+>
+  ↩️ Reply
+</button>
 
       <button
-        onClick={() => {
-          handleDelete(message._id);
-          setMessageMenuId(null);
-        }}
-        className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-[#293144] transition"
-      >
-        🗑️ Delete
-      </button>
+  onClick={() => {
+    setEditingMessageId(message._id);
+    setEditingText(message.text || "");
+    setMessageMenuId(null);
+  }}
+  className="w-full px-4 py-2.5 text-left text-sm text-gray-200 hover:bg-[#293144] transition"
+>
+  ✏️ Edit
+</button>
+
+     <button
+  onClick={() => {
+    handleDelete(message._id);
+    setMessageMenuId(null);
+  }}
+  className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-[#293144] transition"
+>
+  🗑️ Delete
+</button>
 
     </div>
   )}
@@ -1865,6 +1964,38 @@ const handleLogout = () => {
 {selectedImage && (
   <div className="flex items-center text-sm text-green-600">
     📷 {selectedImage.name}
+  </div>
+)}
+
+{replyingTo && (
+  <div className="mb-2 flex items-center justify-between rounded-lg bg-[#1c2230] border border-[#30384a] px-3 py-2">
+    <div className="min-w-0">
+      <p className="text-xs text-blue-400 mb-1">
+        Replying to
+      </p>
+
+      <p className="text-sm text-gray-300 truncate">
+        {replyingTo.text || "This message"}
+      </p>
+    </div>
+
+    <button
+  onClick={() => {
+    setReplyingTo({
+      ...message,
+      text:
+        message.text ||
+        (message.image ? "📷 Image" : "") ||
+        (message.file?.name ? `📎 ${message.file.name}` : "") ||
+        "Attachment",
+    });
+
+    setMessageMenuId(null);
+  }}
+  className="w-full px-4 py-2.5 text-left text-sm text-gray-200 hover:bg-[#293144] transition"
+>
+  ↩️ Reply
+</button>
   </div>
 )}
 

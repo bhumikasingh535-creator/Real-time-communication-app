@@ -1,5 +1,6 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose");
 const User = require("../models/User");
 
 // Register
@@ -38,10 +39,19 @@ exports.register = async (req, res) => {
 // Login
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const email = req.body.email.trim().toLowerCase();
+const { password } = req.body;
+
+console.log("LOGIN EMAIL RECEIVED:", JSON.stringify(email));
 
     // Check if user exists
     const user = await User.findOne({ email });
+    console.log("DATABASE:", mongoose.connection.name);
+console.log("USER FOUND:", !!user);
+
+console.log(
+  "ALL USERS:",
+   await User.find({}, { email: 1, _id: 0 }).lean());
 
     if (!user) {
       return res.status(400).json({

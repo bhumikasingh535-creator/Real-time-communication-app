@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:5000/api",
+ baseURL: "https://real-time-communication-app-1-gwmu.onrender.com/api",
 });
 
 API.interceptors.request.use(

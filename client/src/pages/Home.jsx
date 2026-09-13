@@ -851,7 +851,7 @@ const downloadFile = async (message) => {
     );
 
    const link = document.createElement("a");
-link.href = `http://localhost:5000/api/message/download/${message._id}`;
+link.href = `${import.meta.env.VITE_API_URL}/message/download/${message._id}`;
 link.download = message.file.name;
 link.click();
 

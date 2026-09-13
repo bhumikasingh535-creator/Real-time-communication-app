@@ -238,7 +238,7 @@ exports.uploadFile = async (req, res) => {
       });
     }
 
-    const fileUrl = `http://localhost:5000/uploads/${req.file.filename}`;
+    const fileUrl = `${process.env.SERVER_URL}/uploads/${req.file.filename}`;
 
     const message = await Message.create({
       senderId: req.user.id,
@@ -298,7 +298,7 @@ exports.uploadAudio = async (req, res) => {
       });
     }
 
-    const audioUrl = `http://localhost:5000/uploads/${req.file.filename}`;
+   const audioUrl = `${process.env.SERVER_URL}/uploads/${req.file.filename}`;
 
     const message = await Message.create({
       senderId: req.user.id,

@@ -406,16 +406,23 @@ const createPeerConnection = (remoteUserId) => {
 
     // Video call
     if (event.track.kind === "video") {
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = remoteStream;
+  if (remoteVideoRef.current) {
+    const video = remoteVideoRef.current;
 
-        remoteVideoRef.current
-          .play()
-          .catch((error) => {
-            console.log("Remote video play error:", error);
-          });
-      }
+    if (video.srcObject !== remoteStream) {
+      video.srcObject = remoteStream;
     }
+
+    video.onloadedmetadata = async () => {
+      try {
+        await video.play();
+        console.log("✅ Remote video playing");
+      } catch (error) {
+        console.log("❌ Remote video play error:", error);
+      }
+    };
+  }
+}
 
     // Audio call
     if (event.track.kind === "audio") {

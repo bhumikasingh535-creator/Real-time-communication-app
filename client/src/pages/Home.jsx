@@ -1804,7 +1804,27 @@ const handleLogout = () => {
   {isMuted ? "🔇 Unmute" : "🎙️ Mute"}
 </button>
 
-     <button
+{/* =========================
+    CALL RECORDING
+========================= */}
+<button
+  onClick={
+    isCallRecording
+      ? stopCallRecording
+      : startCallRecording
+  }
+  className={`w-full sm:w-auto text-white px-5 py-2 rounded-lg ${
+    isCallRecording
+      ? "bg-red-700 hover:bg-red-800"
+      : "bg-blue-600 hover:bg-blue-700"
+  }`}
+>
+  {isCallRecording
+    ? `⏹️ Stop Recording (${callRecordingTime}s)`
+    : "🎙️ Record Call"}
+</button>
+
+<button
   onClick={endCall}
   className="w-full sm:w-auto bg-red-500 text-white px-5 py-2 rounded-lg hover:bg-red-600"
 >

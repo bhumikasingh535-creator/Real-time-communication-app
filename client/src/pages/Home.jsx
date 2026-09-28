@@ -1647,14 +1647,12 @@ const handleLogout = () => {
         />
 
         {/* Other Person Video */}
-        {callAccepted && (
-          <video
-            ref={remoteVideoRef}
-            autoPlay
-            playsInline
-            className="w-64 h-48 bg-black rounded-lg object-cover"
-          />
-        )}
+        <video
+  ref={remoteVideoRef}
+  autoPlay
+  playsInline
+  className="w-64 h-48 bg-black rounded-lg object-cover"
+/>
       </>
     )}
 

@@ -53,6 +53,14 @@ const Home = () => {
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [messageMenuId, setMessageMenuId] = useState(null);
   const [replyingTo, setReplyingTo] = useState(null);
+  const [isMuted, setIsMuted] = useState(false);
+  const callRecordingRef = useRef(null);
+const callRecordingChunksRef = useRef([]);
+const remoteCallStreamRef = useRef(null);
+ const [isCallRecording, setIsCallRecording] = useState(false);
+const [callRecordingTime, setCallRecordingTime] = useState(0);
+const callRecordingTimerRef = useRef(null);
+const callAudioContextRef = useRef(null);
 
 
   const configuration = {
@@ -426,16 +434,20 @@ const createPeerConnection = (remoteUserId) => {
 
     // Audio call
     if (event.track.kind === "audio") {
-      if (remoteAudioRef.current) {
-        remoteAudioRef.current.srcObject = remoteStream;
+  console.log("🎧 Remote audio received");
 
-        remoteAudioRef.current
-          .play()
-          .catch((error) => {
-            console.log("Remote audio play error:", error);
-          });
-      }
-    }
+  remoteCallStreamRef.current = remoteStream;
+
+  if (remoteAudioRef.current) {
+    remoteAudioRef.current.srcObject = remoteStream;
+
+    remoteAudioRef.current
+      .play()
+      .catch((error) => {
+        console.log("Remote audio play error:", error);
+      });
+  }
+}
   };
 
   // ===============================
@@ -801,6 +813,107 @@ const endCall = () => {
   setCallPartnerId(null);
 
   console.log("✅ Call ended");
+};
+
+const toggleMute = () => {
+  if (!localStreamRef.current) return;
+
+  const audioTrack = localStreamRef.current.getAudioTracks()[0];
+
+  if (audioTrack) {
+    audioTrack.enabled = !audioTrack.enabled;
+    setIsMuted(!audioTrack.enabled);
+  }
+};
+
+const startCallRecording = async () => {
+  try {
+    const localStream = localStreamRef.current;
+    const remoteStream = remoteCallStreamRef.current;
+
+    if (!localStream || !remoteStream) {
+      alert("Remote audio is not connected yet.");
+      return;
+    }
+
+    const audioContext = new AudioContext();
+    callAudioContextRef.current = audioContext;
+
+    const destination = audioContext.createMediaStreamDestination();
+
+    const localSource =
+      audioContext.createMediaStreamSource(localStream);
+
+    const remoteSource =
+      audioContext.createMediaStreamSource(remoteStream);
+
+    localSource.connect(destination);
+    remoteSource.connect(destination);
+
+    const recorder = new MediaRecorder(destination.stream);
+
+    callRecordingChunksRef.current = [];
+
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        callRecordingChunksRef.current.push(event.data);
+      }
+    };
+
+    recorder.onstop = () => {
+      const blob = new Blob(
+        callRecordingChunksRef.current,
+        { type: "audio/webm" }
+      );
+
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `call-recording-${Date.now()}.webm`;
+      a.click();
+
+      URL.revokeObjectURL(url);
+
+      callAudioContextRef.current?.close();
+      callAudioContextRef.current = null;
+    };
+
+    callRecordingRef.current = recorder;
+
+    recorder.start();
+
+    setIsCallRecording(true);
+    setCallRecordingTime(0);
+
+    callRecordingTimerRef.current = setInterval(() => {
+      setCallRecordingTime((prev) => prev + 1);
+    }, 1000);
+
+    console.log("🔴 Call recording started");
+  } catch (error) {
+    console.error("Call recording error:", error);
+    alert("Unable to start call recording.");
+  }
+};
+
+const stopCallRecording = () => {
+  const recorder = callRecordingRef.current;
+
+  if (!recorder) return;
+
+  if (recorder.state !== "inactive") {
+    recorder.stop();
+  }
+
+  clearInterval(callRecordingTimerRef.current);
+
+  setIsCallRecording(false);
+  setCallRecordingTime(0);
+
+  callRecordingRef.current = null;
+
+  console.log("⏹️ Call recording stopped");
 };
 
 const onEmojiClick = (emojiData) => {
@@ -1683,6 +1796,14 @@ const handleLogout = () => {
       autoPlay
       playsInline
     />
+
+    <button
+  onClick={toggleMute}
+  className="w-full sm:w-auto bg-gray-700 text-white px-5 py-2 rounded-lg hover:bg-gray-800"
+>
+  {isMuted ? "🔇 Unmute" : "🎙️ Mute"}
+</button>
+
      <button
   onClick={endCall}
   className="w-full sm:w-auto bg-red-500 text-white px-5 py-2 rounded-lg hover:bg-red-600"
@@ -2074,19 +2195,23 @@ const handleLogout = () => {
 </div>
 
 <button
-  onClick={isRecording ? stopRecording : startRecording}
+  onClick={
+    isCallRecording
+      ? stopCallRecording
+      : startCallRecording
+  }
   className={`text-white px-4 rounded-lg ${
-    isRecording
+    isCallRecording
       ? "bg-red-600 hover:bg-red-700"
       : "bg-gray-700 hover:bg-gray-800"
   }`}
 >
-  {isRecording ? "⏹" : "🎤"}
+  {isCallRecording ? "⏹" : "🎙️"}
 </button>
 
-{isRecording && (
+{isCallRecording && (
   <div className="flex items-center text-red-600 font-semibold">
-    🔴 Recording {recordingTime}s
+    🔴 Call Recording {callRecordingTime}s
   </div>
 )}
 

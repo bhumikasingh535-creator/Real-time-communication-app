@@ -2195,26 +2195,21 @@ const handleLogout = () => {
 </div>
 
 <button
-  onClick={
-    isCallRecording
-      ? stopCallRecording
-      : startCallRecording
-  }
+  onClick={isRecording ? stopRecording : startRecording}
   className={`text-white px-4 rounded-lg ${
-    isCallRecording
+    isRecording
       ? "bg-red-600 hover:bg-red-700"
       : "bg-gray-700 hover:bg-gray-800"
   }`}
 >
-  {isCallRecording ? "⏹" : "🎙️"}
+  {isRecording ? "⏹" : "🎤"}
 </button>
 
-{isCallRecording && (
+{isRecording && (
   <div className="flex items-center text-red-600 font-semibold">
-    🔴 Call Recording {callRecordingTime}s
+    🔴 Recording {recordingTime}s
   </div>
 )}
-
   <button
     onClick={sendMessage}
     className="bg-blue-600 text-white px-4 md:px-6 py-3 rounded-lg hover:bg-blue-700"
